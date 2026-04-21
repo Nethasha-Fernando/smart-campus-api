@@ -8,12 +8,13 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.stream.Collectors; 
 
 /**
  * Sensor Resource — Part 3.
  * Handles all API operations related to sensors.
  */
+
 @Path("/sensors")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -39,15 +40,16 @@ public class SensorResource {
                     .collect(Collectors.toList());
         }
 
-        // Build response
+        // Build response 
         Map<String, Object> response = new LinkedHashMap<>();
+        //gives the number of sensors returned
         response.put("count", sensorList.size());
 
         // Include filter info if applied
         if (type != null && !type.isBlank()) {
             response.put("filterApplied", Map.of("type", type));
         }
-
+        //Adds final sensor list (filtered or full)
         response.put("sensors", sensorList);
 
         return Response.ok(response).build();
@@ -61,32 +63,33 @@ public class SensorResource {
     public Response createSensor(Sensor sensor) {
 
         // Validate required fields
+        ///check if id exists
         if (sensor == null || sensor.getId() == null || sensor.getId().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Sensor 'id' is required."))
                     .build();
         }
-
+        //checks if type exists
         if (sensor.getType() == null || sensor.getType().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Sensor 'type' is required."))
                     .build();
         }
-
+        //check if room id of the sensor is entered
         if (sensor.getRoomId() == null || sensor.getRoomId().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Sensor 'roomId' is required."))
                     .build();
         }
 
-        // Check if sensor ID already exists
+        // Check if sensor ID is duplicated
         if (store.getSensors().containsKey(sensor.getId())) {
             return Response.status(Response.Status.CONFLICT)
                     .entity(errorBody("A sensor with id '" + sensor.getId() + "' already exists."))
                     .build();
         }
 
-        // Ensure the referenced room exists
+        // when a new sensor is registered, verifies that the actual roomId specified in the request body exists
         if (!store.getRooms().containsKey(sensor.getRoomId())) {
             throw new LinkedResourceNotFoundException(
                     "The roomId '" + sensor.getRoomId() + "' does not exist."

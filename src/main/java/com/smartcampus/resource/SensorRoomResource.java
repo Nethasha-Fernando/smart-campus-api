@@ -23,7 +23,7 @@ public class SensorRoomResource {
 
     /**
      * GET /api/v1/rooms
-     * Returns a comprehensive list of all rooms.
+     * Fetches all rooms from DataStore, and returns the total number of rooms and the full room list.
      */
     @GET
     public Map<String, Object> getAllRooms() {
@@ -40,26 +40,32 @@ public class SensorRoomResource {
      */
     @POST
     public Response createRoom(Room room) {
+        // check if ID exists, if not reject request (400 Bad Request)
         if (room == null || room.getId() == null || room.getId().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Room 'id' is required."))
                     .build();
         }
+        // Check if the room has a name, if not reject it
         if (room.getName() == null || room.getName().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Room 'name' is required."))
                     .build();
         }
+        // if the room ID already exists reject with 409 Conflict
         if (store.getRooms().containsKey(room.getId())) {
             return Response.status(Response.Status.CONFLICT)
                     .entity(errorBody("A room with id '" + room.getId() + "' already exists."))
                     .build();
         }
+        // if room has no sensor list creates one
         if (room.getSensorIds() == null) {
             room.setSensorIds(new ArrayList<>());
         }
+        // save the room
         store.getRooms().put(room.getId(), room);
 
+        // Return the response 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("message", "Room created successfully.");
         response.put("room", room);
@@ -68,8 +74,9 @@ public class SensorRoomResource {
 
     /**
      * GET /api/v1/rooms/{roomId}
-     * Returns a single room object or throws NotFoundException (maps to 404).
+     * Returns a single room object by the ID and return it or throws NotFoundException (maps to 404).
      */
+    
     @GET
     @Path("/{roomId}")
     public Room getRoomById(@PathParam("roomId") String roomId) {
@@ -87,18 +94,20 @@ public class SensorRoomResource {
     @DELETE
     @Path("/{roomId}")
     public Response deleteRoom(@PathParam("roomId") String roomId) {
+        //get the room by ID, if it doenst exist throw an error
         Room room = store.getRooms().get(roomId);
         if (room == null) {
             throw new NotFoundException("Room with id '" + roomId + "' not found.");
         }
-
+        //check if sensors are available in a room if yes,do not delete the room.
         if (!room.getSensorIds().isEmpty()) {
             throw new RoomNotEmptyException(
                     "Room '" + roomId + "' cannot be deleted. It still has " +
                             room.getSensorIds().size() + " sensor(s) assigned."
             );
         }
-
+        
+        //Removes the room
         store.getRooms().remove(roomId);
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -106,7 +115,7 @@ public class SensorRoomResource {
         response.put("deletedRoomId", roomId);
         return Response.ok(response).build();
     }
-
+    // Helper method that craetes a standard error response for your API
     private Map<String, Object> errorBody(String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("error", message);

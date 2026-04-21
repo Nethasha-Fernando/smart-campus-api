@@ -8,44 +8,49 @@ import java.util.Set;
 import com.smartcampus.exception.*;
 import com.smartcampus.filter.LoggingFilter;
 import com.smartcampus.resource.DiscoveryResource;
-import com.smartcampus.resource.RoomResource;
+import com.smartcampus.resource.SensorRoomResource;
 import com.smartcampus.resource.SensorResource;
 
- /**
- * JAX-RS Application configuration class.
+/**
+ * SmartCampusApplication
  *
- * The @ApplicationPath("/api/v1") defines the base URI for all API endpoints.
- * Every resource in this application will be accessible under this path.
+ * JAX-RS configuration class that defines the base API path
+ * and explicitly registers all components used by the application.
  *
- * This class extends the JAX-RS Application class and overrides the getClasses() method
- * to explicitly register all components used by the API.
- *
- * These include resource classes (which define endpoints), exception mappers
-  * (which handle errors and return proper HTTP responses), and filters (such as logging).
-  * This ensures that Jersey knows exactly which classes to use when handling incoming requests.
+ * The @ApplicationPath("/api/v1") sets the base URI for all endpoints.
  */
-
 @ApplicationPath("/api/v1")
 public class SmartCampusApplication extends Application {
 
+    /**
+     * Registers all classes that should be loaded by Jersey at runtime.
+     * Includes resources (endpoints), exception mappers, and filters.
+     */
     @Override
-    public Set<Class<?>> getClasses() {  // This method returns a list of all components Jersey should load:
+    public Set<Class<?>> getClasses() {
         Set<Class<?>> classes = new HashSet<>();
 
-        // Resources (API endpoints and registered here)
+        // ================================
+        // Resources (API Endpoints)
+        // ================================
         classes.add(DiscoveryResource.class);
-        classes.add(RoomResource.class);
+        classes.add(SensorRoomResource.class);
         classes.add(SensorResource.class);
 
-        // Exception Mappers (Instead of crashing your API, you map errors to HTTP responses like 404 likewisr)
+        // ================================
+        // Exception Mappers
+        // Convert exceptions into proper HTTP responses
+        // ================================
         classes.add(RoomNotEmptyExceptionMapper.class);
         classes.add(LinkedResourceNotFoundExceptionMapper.class);
         classes.add(SensorUnavailableExceptionMapper.class);
         classes.add(GlobalExceptionMapper.class);
 
-        // Filters (automatically runs for every req logs, incoming request and outgoing response)
-        classes.add(LoggingFilter.class);
+        // ================================
+        // Filters (Cross-cutting concerns)
+        // ================================
+        classes.add(LoggingFilter.class); // Logs all requests and responses
 
-        return classes;  //Load everything in this set when starting the server.”
+        return classes;
     }
 }

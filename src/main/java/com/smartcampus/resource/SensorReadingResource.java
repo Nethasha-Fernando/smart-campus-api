@@ -34,15 +34,17 @@ public class SensorReadingResource {
      */
     @GET
     public Response getReadings() {
+        //check if sensor exists
         if (!store.getSensors().containsKey(sensorId)) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(errorBody("Sensor '" + sensorId + "' not found."))
                     .build();
         }
-
+        //if yes, give the reading of it, if not return an empty list 
         List<SensorReading> history = store.getReadings()
                 .getOrDefault(sensorId, Collections.emptyList());
 
+        //Response structure
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("sensorId", sensorId);
         response.put("totalReadings", history.size());
@@ -59,6 +61,7 @@ public class SensorReadingResource {
     @POST
     public Response addReading(SensorReading reading) {
         Sensor sensor = store.getSensors().get(sensorId);
+        //check if sensor exists
         if (sensor == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(errorBody("Sensor '" + sensorId + "' not found."))
@@ -72,14 +75,15 @@ public class SensorReadingResource {
                     "accept new readings. Please wait until the sensor is restored to ACTIVE status."
             );
         }
-
+        
+        //"Request body with a 'value' field is required."
         if (reading == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(errorBody("Request body with a 'value' field is required."))
                     .build();
         }
 
-        // Auto-generate id and timestamp if not provided by the client
+        // Auto-generate reading id and timestamp if not provided by the client
         if (reading.getId() == null || reading.getId().isBlank()) {
             reading.setId(java.util.UUID.randomUUID().toString());
         }
@@ -87,7 +91,7 @@ public class SensorReadingResource {
             reading.setTimestamp(System.currentTimeMillis());
         }
 
-        // Persist reading
+        // Find the list of readings for this sensor. If it doesn’t exist, creates it. Then add the new reading to it
         store.getReadings()
              .computeIfAbsent(sensorId, k -> new ArrayList<>())
              .add(reading);

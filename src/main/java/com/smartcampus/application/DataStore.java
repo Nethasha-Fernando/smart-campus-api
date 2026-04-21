@@ -73,11 +73,3 @@ public class DataStore {
 //Maps (like tables)
 //Lists (like collections of data)
 
-
-//DataStore = your app’s brain (stores all data)
-//
-//It remembers:
-//
-//Rooms 🏫
-//Sensors 📡
-//Sensor readings 📊
