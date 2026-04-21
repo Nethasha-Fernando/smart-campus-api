@@ -15,7 +15,7 @@ import java.util.*;
  *
  * Handles: GET /api/v1/sensors/{sensorId}/readings
  *          POST /api/v1/sensors/{sensorId}/readings
- */
+ */ 
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class SensorReadingResource {
@@ -109,4 +109,4 @@ public class SensorReadingResource {
         body.put("timestamp", System.currentTimeMillis());
         return body;
     }
-}
+}  
