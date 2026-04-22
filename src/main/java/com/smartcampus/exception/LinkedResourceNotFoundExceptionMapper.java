@@ -27,6 +27,7 @@ public class LinkedResourceNotFoundExceptionMapper
         body.put("error", "Unprocessable Entity");
         body.put("code", "LINKED_RESOURCE_NOT_FOUND");
         body.put("message", exception.getMessage());
+        body.put("field", "roomId");
         body.put("hint", "Ensure the referenced resource (e.g., roomId) exists before creating a dependent resource.");
         body.put("timestamp", System.currentTimeMillis());
 

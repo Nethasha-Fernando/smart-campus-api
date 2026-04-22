@@ -68,19 +68,19 @@ public class SensorReadingResource {
                     .build();
         }
 
+        //"Request body with a 'value' field is required."
+        if (reading == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(errorBody("Request body with a 'value' field is required."))
+                    .build();
+        }
+
         // State constraint: sensors under maintenance cannot accept readings
         if ("MAINTENANCE".equalsIgnoreCase(sensor.getStatus())) {
             throw new SensorUnavailableException(
                     "Sensor '" + sensorId + "' is currently under MAINTENANCE and cannot " +
                     "accept new readings. Please wait until the sensor is restored to ACTIVE status."
             );
-        }
-        
-        //"Request body with a 'value' field is required."
-        if (reading == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(errorBody("Request body with a 'value' field is required."))
-                    .build();
         }
 
         // Auto-generate reading id and timestamp if not provided by the client

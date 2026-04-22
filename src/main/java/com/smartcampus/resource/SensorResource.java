@@ -92,8 +92,8 @@ public class SensorResource {
         // when a new sensor is registered, verifies that the actual roomId specified in the request body exists
         if (!store.getRooms().containsKey(sensor.getRoomId())) {
             throw new LinkedResourceNotFoundException(
-                    "The roomId '" + sensor.getRoomId() + "' does not exist."
-            );
+        "The roomId '" + sensor.getRoomId() + "' referenced in your request payload does not exist in the system."
+);
         }
 
         // Set default status if not provided

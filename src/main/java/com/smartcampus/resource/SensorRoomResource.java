@@ -101,12 +101,11 @@ public class SensorRoomResource {
         }
         //check if sensors are available in a room if yes,do not delete the room.
         if (!room.getSensorIds().isEmpty()) {
-            throw new RoomNotEmptyException(
-                    "Room '" + roomId + "' cannot be deleted. It still has " +
-                            room.getSensorIds().size() + " sensor(s) assigned."
-            );
-        }
-        
+        throw new RoomNotEmptyException(
+                "Room '" + roomId + "' cannot be deleted because it still has active sensors assigned to it.",
+                new java.util.ArrayList<>(room.getSensorIds())
+        );
+    }
         //Removes the room
         store.getRooms().remove(roomId);
 

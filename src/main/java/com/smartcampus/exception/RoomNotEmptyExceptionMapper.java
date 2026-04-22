@@ -25,6 +25,7 @@ public class RoomNotEmptyExceptionMapper implements ExceptionMapper<RoomNotEmpty
         body.put("error", "Conflict");
         body.put("code", "ROOM_NOT_EMPTY");
         body.put("message", exception.getMessage());
+        body.put("activeSensors", exception.getActiveSensorIds());
         body.put("hint", "Decommission or reassign all sensors before deleting the room.");
         body.put("timestamp", System.currentTimeMillis());
 
