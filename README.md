@@ -1,8 +1,8 @@
 # Smart Campus – Sensor & Room Management API
 
 **Module:** 5COSC022W Client-Server Architectures
-**Stack:** Java 11 · JAX-RS 2 (Jersey 2.39.1) · Grizzly HTTP (embedded) · Jackson JSON
-**Base URL:** `http://localhost:8080/api/v1`
+**Stack:** Java 11 · JAX-RS 2 (Jersey 2.39.1) · Apache Tomcat 9 · Jackson JSON
+**Base URL:** `http://localhost:8080/smart-campus-api/api/v1`
 
 ---
 
@@ -59,16 +59,15 @@ Smart Campus API/
 └── src/main/java/
     ├── com.smartcampus.application/
     │   ├── DataStore.java                     # Thread-safe singleton  in-memory store
-    │   ├── Main.java                          # Embedded Grizzly server entry point
     │   └── SmartCampusApplication.java        # JAX-RS @ApplicationPath("/api/v1")
     ├── com.smartcampus.exception/
-    │   ├── GlobalExceptionMapper.java         # → 500 Internal Server Error (catch-all)
+    │   ├── GlobalExceptionMapper.java         # 500 Internal Server Error (catch-all)
     │   ├── LinkedResourceNotFoundException.java
-    │   ├── LinkedResourceNotFoundExceptionMapper.java  # → 422 Unprocessable Entity
-    │   ├── RoomNotEmptyException.java
-    │   ├── RoomNotEmptyExceptionMapper.java   # → 409 Conflict
+    │   ├── LinkedResourceNotFoundExceptionMapper.java  # 422 Unprocessable Entity
+    │   ├── RoomNotEmptyException.java 
+    │   ├── RoomNotEmptyExceptionMapper.java   # 409 Conflict
     │   ├── SensorUnavailableException.java
-    │   └── SensorUnavailableExceptionMapper.java       # → 403 Forbidden
+    │   └── SensorUnavailableExceptionMapper.java       # 403 Forbidden
     ├── com.smartcampus.filter/
     │   └── LoggingFilter.java                 # Logs every request & response
     ├── com.smartcampus.model/
@@ -84,13 +83,14 @@ Smart Campus API/
 
 ---
 
-## Build & Run Instructions
+## Build & Deploy Instructions (Apache Tomcat)
 
 ### Prerequisites
 
 - Java 11 or higher — verify with `java -version`
 - Maven 3.6 or higher — verify with `mvn -version`
-
+- Apache Tomcat 9 (download from https://tomcat.apache.org/)
+- 
 ### Step 1 – Clone the repository
 
 ```bash
@@ -98,36 +98,51 @@ git clone https://github.com/Nethasha-Fernando/smart-campus-api.git
 cd smart-campus-api
 ```
 
-### Step 2 – Build the fat JAR
+### Step 2 – Build the WAR file
 
 ```bash
 mvn clean package
-```
-
-This compiles all sources and produces `target/smart-campus-api-1.0-SNAPSHOT.jar` — a self-contained executable JAR with all dependencies embedded via the Maven Shade plugin. No separate application server is required.
-
-### Step 3 – Start the server
-
-```bash
-java -jar target/smart-campus-api-1.0-SNAPSHOT.jar
-```
-
-Expected console output:
 
 ```
-INFO: Smart Campus API started successfully!
-INFO: Rooms    : http://localhost:8080/api/v1/rooms
-INFO: Sensors  : http://localhost:8080/api/v1/sensors
-INFO: Press CTRL+C to stop the server.
+This produces target/smart-campus-api.war (a Web Application Archive).
+
+### Step 3 – Deploy to Tomcat
+
+Copy the .war file into Tomcat's webapps/ directory.
+
 ```
+For example: cp target/smart-campus-api.war /path/to/tomcat/webapps/
+
+```
+Start Tomcat:
+
+On Windows: 
+
+```
+bin\startup.bat
+
+```
+On macOS/Linux:
+
+```
+bin/startup.sh
+
+```
+Tomcat will automatically extract and deploy the application.
+The API will be available at:
+
+
+```
+http://localhost:8080/smart-campus-api/api/v1
+
+```
+
 
 ### Step 4 – Test the API
 
-The server listens on port **8080**. Use the curl commands below or test using ## 📬 Postman Collection
+The server listens on port 8080. Use the curl commands below or import the Postman collection to test all endpoints."
 
-You can test all endpoints using the Postman collection:
-
-## 📬 Postman Collection
+## Postman Collection
 
 You can test all endpoints using the Postman collection:
 
@@ -177,7 +192,7 @@ The API starts with the following data already loaded so it is immediately demon
 | `OCC-001`  | Occupancy   | MAINTENANCE | LAB-102  |
 | `TEMP-002` | Temperature | ACTIVE      | HALL-001 |
 
-**Readings:** Two historical readings are pre-seeded for `TEMP-001` (values 21.0 and 22.5).
+**Readings:** Two historical readings are pre-seeded for  `TEMP-001` (values 21.0 and 22.5). . One reading is also pre-seeded for `CO2-001` (value 400.0).
 
 ---
 
@@ -186,7 +201,7 @@ The API starts with the following data already loaded so it is immediately demon
 ### 1. Discovery – GET /api/v1
 
 ```bash
-curl -s http://localhost:8080/api/v1 | python3 -m json.tool
+curl -s http://localhost:8080/smart-campus-api/api/v1 | python3 -m json.tool
 ```
 
 Expected response (`200 OK`):
@@ -196,7 +211,7 @@ Expected response (`200 OK`):
   "api": "Smart Campus Sensor & Room Management API",
   "version": "1.0.0",
   "status": "operational",
-  "description": "A RESTful API for managing campus rooms and IoT sensors built with JAX-RS (Jersey) on an embedded Grizzly server.",
+  "description": "A RESTful API for managing campus rooms and IoT sensors built with JAX-RS (Jersey) deployed on Apache Tomcat.",
   "contact": {
     "Team": "University of Westminster - Smart Campus Initiative",
     "Module": "5COSC022W Client-Server Architectures",
@@ -217,7 +232,7 @@ Expected response (`200 OK`):
 ### 2. Create a Room – POST /api/v1/rooms
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/rooms \
+curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/rooms \
   -H "Content-Type: application/json" \
   -d '{"id":"ENG-205","name":"Engineering Lab","capacity":40}' \
   | python3 -m json.tool
@@ -242,7 +257,7 @@ Expected response (`201 Created`):
 ### 3. List All Rooms – GET /api/v1/rooms
 
 ```bash
-curl -s http://localhost:8080/api/v1/rooms | python3 -m json.tool
+curl -s http://localhost:8080/smart-campus-api/api/v1/rooms | python3 -m json.tool
 ```
 
 Returns a `200 OK` JSON object with a `count` field and a `rooms` array containing all room objects including the three pre-seeded rooms.
@@ -252,7 +267,7 @@ Returns a `200 OK` JSON object with a `count` field and a `rooms` array containi
 ### 4. Register a Sensor – POST /api/v1/sensors
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/sensors \
+curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/sensors \
   -H "Content-Type: application/json" \
   -d '{"id":"TEMP-003","type":"Temperature","status":"ACTIVE","currentValue":21.0,"roomId":"LIB-301"}' \
   | python3 -m json.tool
@@ -278,7 +293,7 @@ Expected response (`201 Created`). If `roomId` does not exist → `422 Unprocess
 ### 5. Filter Sensors by Type – GET /api/v1/sensors?type=CO2
 
 ```bash
-curl -s "http://localhost:8080/api/v1/sensors?type=CO2" | python3 -m json.tool
+curl -s "http://localhost:8080/smart-campus-api/api/v1/sensors?type=CO2" | python3 -m json.tool
 ```
 
 Expected response:
@@ -307,7 +322,7 @@ Returns `200 OK` — only sensors whose `type` field matches `CO2` (case-insensi
 ### 6. Get Reading History – GET /api/v1/sensors/{sensorId}/readings
 
 ```bash
-curl -s http://localhost:8080/api/v1/sensors/TEMP-001/readings | python3 -m json.tool
+curl -s http://localhost:8080/smart-campus-api/api/v1/sensors/TEMP-001/readings | python3 -m json.tool
 ```
 
 Expected Response:
@@ -337,14 +352,14 @@ Returns `200 OK` — the full historical reading log for `TEMP-001`, including t
 ### 7. Post a Sensor Reading – POST /api/v1/sensors/{sensorId}/readings
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/sensors/TEMP-001/readings \
+curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/sensors/TEMP-001/readings \
   -H "Content-Type: application/json" \
   -d '{"value":45.5}' \
   | python3 -m json.tool
 ```
 
 Expected response:
-(`201 Created`) — also updates `TEMP-001.currentValue` to `23.7`. Verify by calling `GET /api/v1/sensors/TEMP-001`.
+(`201 Created`) — also updates `TEMP-001.currentValue` to `45.5`. Verify by calling `GET /api/v1/sensors/TEMP-001`.
 
 ```json
 {
@@ -364,7 +379,7 @@ Expected response:
 ### 8. Delete a Room with Sensors – triggers 409 Conflict
 
 ```bash
-curl -s -X DELETE http://localhost:8080/api/v1/rooms/LIB-301 | python3 -m json.tool
+curl -s -X DELETE http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301 | python3 -m json.tool
 ```
 
 Expected response (`409 Conflict`):
@@ -380,13 +395,14 @@ Expected response (`409 Conflict`):
   "timestamp": 1776886133164
 }
 ```
+Note: TEMP-003 only appears in this list if Command 4 (register sensor) was run first. On a fresh server without Command 4, activeSensors will be ["TEMP-001", "CO2-001"].
 
 ---
 
 ### 9. Post a Reading to a MAINTENANCE sensor – triggers 403 Forbidden
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/sensors/OCC-001/readings \
+curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/sensors/OCC-001/readings \
   -H "Content-Type: application/json" \
   -d '{"value":5}' \
   | python3 -m json.tool
@@ -410,7 +426,7 @@ Expected response (`403 Forbidden`):
 ### 10. Register a Sensor with a non-existent roomId – triggers 422
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/sensors \
+curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/sensors \
   -H "Content-Type: application/json" \
   -d '{"id":"TEMP-999","type":"Temperature","status":"ACTIVE","currentValue":20.0,"roomId":"FAKE-999"}' \
   | python3 -m json.tool
@@ -442,7 +458,7 @@ The runtime does **not** treat resource classes as singletons by default. This d
 
 However, this lifecycle has a critical implication for in-memory data management. Because resource instances are short-lived, any data stored as a field on the resource class will be destroyed after the request completes. All shared state — rooms, sensors, and readings — must therefore live in a **separate singleton component**, which in this project is `DataStore`. The `DataStore` is instantiated once (via a static field) and lives for the entire lifetime of the application.
 
-Because this singleton `DataStore` is accessed by multiple concurrent request-handler threads simultaneously, storing data in a plain `HashMap` or `ArrayList` would risk race conditions, lost updates, and `ConcurrentModificationException`. To prevent this, the implementation uses `ConcurrentHashMap` for rooms and sensors, and `Collections.synchronizedList` for per-sensor reading histories. These thread-safe structures allow safe concurrent reads and writes without explicit `synchronized` blocks on every access.
+Because this singleton `DataStore` is accessed by multiple concurrent request-handler threads simultaneously, storing data in a plain `HashMap` or `ArrayList`would risk race conditions, lost updates, and `ConcurrentModificationException`. To prevent this, the implementation uses `ConcurrentHashMap` for rooms and sensors, and a ConcurrentHashMap mapping each sensor ID to its reading history, ensuring all shared state is accessed through thread-safe structures without requiring explicit  `synchronized` blocks on every access.
 
 ---
 
