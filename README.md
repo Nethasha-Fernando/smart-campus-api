@@ -140,11 +140,9 @@ http://localhost:8080/smart-campus-api/api/v1
 
 ### Step 4 – Test the API
 
-The server listens on port **8080**. Use the curl commands below or test using ## 📬 Postman Collection
+The server listens on port 8080. Use the curl commands below or import the Postman collection to test all endpoints."
 
-You can test all endpoints using the Postman collection:
-
-## 📬 Postman Collection
+## Postman Collection
 
 You can test all endpoints using the Postman collection:
 
@@ -194,7 +192,7 @@ The API starts with the following data already loaded so it is immediately demon
 | `OCC-001`  | Occupancy   | MAINTENANCE | LAB-102  |
 | `TEMP-002` | Temperature | ACTIVE      | HALL-001 |
 
-**Readings:** Two historical readings are pre-seeded for `TEMP-001` (values 21.0 and 22.5).
+**Readings:** Two historical readings are pre-seeded for  `TEMP-001` (values 21.0 and 22.5). . One reading is also pre-seeded for `CO2-001` (value 400.0).
 
 ---
 
@@ -213,7 +211,7 @@ Expected response (`200 OK`):
   "api": "Smart Campus Sensor & Room Management API",
   "version": "1.0.0",
   "status": "operational",
-  "description": "A RESTful API for managing campus rooms and IoT sensors built with JAX-RS (Jersey) on an embedded Grizzly server.",
+  "description": "A RESTful API for managing campus rooms and IoT sensors built with JAX-RS (Jersey) deployed on Apache Tomcat.",
   "contact": {
     "Team": "University of Westminster - Smart Campus Initiative",
     "Module": "5COSC022W Client-Server Architectures",
@@ -361,7 +359,7 @@ curl -s -X POST http://localhost:8080/smart-campus-api/api/v1/sensors/TEMP-001/r
 ```
 
 Expected response:
-(`201 Created`) — also updates `TEMP-001.currentValue` to `23.7`. Verify by calling `GET /api/v1/sensors/TEMP-001`.
+(`201 Created`) — also updates `TEMP-001.currentValue` to `45.5`. Verify by calling `GET /api/v1/sensors/TEMP-001`.
 
 ```json
 {
@@ -397,6 +395,7 @@ Expected response (`409 Conflict`):
   "timestamp": 1776886133164
 }
 ```
+Note: TEMP-003 only appears in this list if Command 4 (register sensor) was run first. On a fresh server without Command 4, activeSensors will be ["TEMP-001", "CO2-001"].
 
 ---
 
@@ -459,7 +458,7 @@ The runtime does **not** treat resource classes as singletons by default. This d
 
 However, this lifecycle has a critical implication for in-memory data management. Because resource instances are short-lived, any data stored as a field on the resource class will be destroyed after the request completes. All shared state — rooms, sensors, and readings — must therefore live in a **separate singleton component**, which in this project is `DataStore`. The `DataStore` is instantiated once (via a static field) and lives for the entire lifetime of the application.
 
-Because this singleton `DataStore` is accessed by multiple concurrent request-handler threads simultaneously, storing data in a plain `HashMap` or `ArrayList` would risk race conditions, lost updates, and `ConcurrentModificationException`. To prevent this, the implementation uses `ConcurrentHashMap` for rooms and sensors, and `Collections.synchronizedList` for per-sensor reading histories. These thread-safe structures allow safe concurrent reads and writes without explicit `synchronized` blocks on every access.
+Because this singleton `DataStore` is accessed by multiple concurrent request-handler threads simultaneously, storing data in a plain `HashMap` or `ArrayList`would risk race conditions, lost updates, and `ConcurrentModificationException`. To prevent this, the implementation uses `ConcurrentHashMap` for rooms and sensors, and a ConcurrentHashMap mapping each sensor ID to its reading history, ensuring all shared state is accessed through thread-safe structures without requiring explicit  `synchronized` blocks on every access.
 
 ---
 
