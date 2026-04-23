@@ -453,6 +453,10 @@ Expected response (`422 Unprocessable Entity`):
 ## Report – Question Answers
 
 ### Part 1 – Q1: JAX-RS Resource Lifecycle
+**Question: In your report, explain the default lifecycle of a JAX-RS Resource class. Is a new instance instantiated for every incoming request, or does the runtime treat it as a
+singleton? Elaborate on how this architectural decision impacts the way you manage and
+synchronize your in-memory data structures (maps/lists) to prevent data loss or race con
+ditions.**
 
 In JAX-RS, the default lifecycle of a resource class is **per-request**. This means that for every incoming HTTP request, the runtime creates a brand new instance of the resource class, uses it to handle that single request, and discards it once the response is sent.
 
@@ -465,6 +469,9 @@ Because this singleton `DataStore` is accessed by multiple concurrent request-ha
 ---
 
 ### Part 1 – Q2: HATEOAS
+**Question: Why is the provision of ”Hypermedia” (links and navigation within responses)
+considered a hallmark of advanced RESTful design (HATEOAS)? How does this approach
+benefit client developers compared to static documentation?**
 
 HATEOAS (Hypermedia as the Engine of Application State) is the practice of embedding navigational links inside API responses so that clients can discover available resources and valid next actions dynamically, without relying on hard-coded URLs or consulting external documentation.
 
@@ -480,6 +487,9 @@ For example, the `GET /api/v1` discovery response in this project includes a `_l
 ---
 
 ### Part 2 – Q1: Full Objects vs IDs in List Responses
+**Question: When returning a list of rooms, what are the implications of returning only
+IDs versus returning the full room objects? Consider network bandwidth and client side
+processing**
 
 When `GET /api/v1/rooms` returns a list, there are two design options:
 
@@ -491,63 +501,81 @@ The trade-off shifts when the collection is extremely large (thousands of items)
 
 ---
 
-### Part 2 – Q2: Is DELETE Idempotent?
+### Part 2 – Q2: Is the DELETE Operation Idempotent?
+**Question: IstheDELETEoperationidempotentinyourimplementation? Provideadetailed
+justification by describingwhathappensifaclientmistakenlysendstheexactsameDELETE
+request for a room multiple times.**
 
-Yes — the `DELETE` operation is idempotent in this implementation, which is consistent with the HTTP/1.1 specification (RFC 9110).
+This implementation of the `DELETE` operation is idempotent as per the HTTP/1.1 definition in RFC 9110, and therefore exhibits idempotent behaviour.
 
-An operation is idempotent if applying it multiple times produces the same server state as applying it once, regardless of how many times it is called.
+An idempotent operation can be applied multiple times but will only modify the server state once, regardless of how many times the operation was called.
 
-- **First call:** The room exists and has no sensors → it is removed → server returns `200 OK`.
-- **Second call (same room ID):** The room is already gone → server returns `404 Not Found`.
+- **1st Call:** Room exists and has no sensors → Room has been deleted → Server returns `200 OK`.
+- **2nd Call (same room ID):** Room does not exist → Server returns `404 Not Found`.
 
-Although the HTTP response code differs between calls, the **final state of the system is identical** — the room does not exist. This satisfies idempotency.
+Even though the HTTP response code is different from the first and second call to delete the room, the **ending state of the system is equal** (the room is deleted) which satisfies idempotency of the system.
 
-Additionally, if a client attempts to `DELETE` a room that still contains sensors, the server consistently returns `409 Conflict` on every attempt until the constraint is resolved. The state of the system remains unchanged across all those calls, which is also idempotent behaviour.
+If you try to perform a DELETE on a room that has sensors, you will continue to receive `409 Conflict` from the server until the constraint is resolved; therefore, the server state does not change and meets the definition of idempotent behaviour in this case as well.
 
 ---
 
 ### Part 3 – Q1: @Consumes and Content-Type Mismatch
 
-The `@Consumes(MediaType.APPLICATION_JSON)` annotation declares the only media type this endpoint will accept. It is enforced by the JAX-RS runtime **before** the resource method is invoked — no application-level code is executed at all.
+**Question: Weexplicitly use the @Consumes (MediaType.APPLICATION_JSON) annotation on
+the POST method. Explain the technical consequences if a client attempts to send data in
+a different format, such as text/plain or application/xml. How does JAX-RS handle this
+mismatch?**
 
-When a client sends a request with a mismatched `Content-Type` header (e.g. `text/plain` or `application/xml`), the runtime performs **content negotiation**: it checks the request's `Content-Type` against the `@Consumes` value and finds no match. The request is rejected immediately, and the runtime automatically returns an **HTTP 415 Unsupported Media Type** response. No attempt is made to deserialise the request body.
+The `@Consumes(MediaType.APPLICATION_JSON)` annotation is used to indicate that this endpoint will consume only one media type, JSON. This is checked by the JAX-RS runtime with no execution of application-level code prior to invoking the resource method. 
 
-This mechanism keeps input validation declarative — the developer does not need to write any code to guard against malformed media types. It also prevents partial processing errors where, for example, an XML body might partially parse as JSON and cause unexpected behaviour.
+When a client sends a request that contains an incompatible Content-Type header value (such as text/plain or application/xml), the runtime will perform content negotiation by checking the Content-Type of the request against the @Consumes annotation value. Since there is no match, the runtime will reject the request and return a 415 (Unsupported Media Type) response. The request body will not even be attempted to be deserialized.
 
----
-
-### Part 3 – Q2: @QueryParam vs Path Segment for Filtering
-
-Both mechanisms can filter a collection, but they serve fundamentally different REST design purposes:
-
-| Approach        | Example                    | Intended purpose                 |
-| --------------- | -------------------------- | -------------------------------- |
-| Query parameter | `/api/v1/sensors?type=CO2` | Filter / search a collection     |
-| Path segment    | `/api/v1/sensors/type/CO2` | Identify a discrete sub-resource |
-
-**Why query parameters are superior for filtering:**
-
-1. **Semantic correctness** — A URL path segment identifies a _resource_. Filtering is not a resource — it is a modifier applied to a collection. Using a path segment to filter implies that `/sensors/type/CO2` is itself a distinct resource, which is conceptually misleading.
-2. **Composability** — Query parameters combine naturally: `?type=CO2&status=ACTIVE`. Path-based filters require additional path segments for each criterion, producing unmaintainable URLs like `/sensors/type/CO2/status/ACTIVE`.
-3. **Optional by design** — A query parameter is omitted when no filter is desired, and the same endpoint serves both filtered and unfiltered requests. Path-based filtering forces a different route for the unfiltered case.
-4. **REST convention** — The broader REST community and major public APIs consistently use query parameters for filtering and searching collections, making the API immediately intuitive to developers.
+The advantages of this method mainly consist of its ability to validate input in a declarative manner, meaning that developers do not have to write code to deal with invalid media types. Additionally, this mechanism eliminates the possibility of having a partially processed error when, for example, an XML body might partially parse as a JSON body, which could otherwise lead to unexpected results.
 
 ---
 
+
+### Part 3 - Q2: Query Parameter vs Path Segment for Filtering
+
+**Question: Youimplementedthisfilteringusing@QueryParam. Contrastthiswithanalterna
+tive design where the type is part of the URL path (e.g., /api/vl/sensors/type/CO2). Why
+is the queryparameterapproachgenerallyconsideredsuperiorforfilteringandsearching
+collections?**
+
+Both methods can be used to filter a collection, however they do follow different REST design purposes:
+
+| Approaches     | Example                 | Intended Purpose             |
+|----------------|-------------------------|------------------------------|
+| Query Parameter | /api/v1/sensors?type=CO2 | Filter/ search a collection |
+| Path Segment    | /api/v1/sensors/type/CO2 | Identify a specific sub-resource |
+
+**Query Parameters Are Better than Path Segments for Filtering** 
+
+1 - **Semantic Accuracy** - A URL path segment represents a resource. Filtering is not considered a resource, it's a modifier applied to a collection, and filtering with a path segment implies there is such a resource (for example, the resource "/sensors/type/CO2") that does not exist.
+2 - **Composability** - Query parameters can be easily combined (for example, ?type=CO2&status=ACTIVE), while path-based filters use separate path segments for each filter to create unmaintainable URLs (for example, /sensors/type/CO2/status/ACTIVE).
+3 - **Optional By Design** - Query parameters can be omitted if there are no filters applied, while both an endpoint can process both filtered and unfiltered requests with no change to the API. However, path-based filters create a necessity to use a different route for unfiltered requests.
+4 - **REST Conformance** - Query parameters for filtering and searching collections for APIs are consistently implemented by the broader REST community and many public APIs, making it intuitive for developers to understand how to use APIs.
+
+---
 ### Part 4 – Q1: Sub-Resource Locator Pattern
+**Question: Discuss the architectural benefits of the Sub-Resource Locator pattern. How
+doesdelegating logic to separate classes help manage complexity in large APIs compared
+to defining every nested path (e.g., sensors/{id}/readings/{rid}) in one massive con
+troller class?**
 
-The Sub-Resource Locator pattern delegates responsibility for a nested URL path to a separate class rather than handling it inside the parent resource. In this implementation, `SensorResource` contains a method annotated only with `@Path("/{sensorId}/readings")` — no HTTP method annotation — which returns a `SensorReadingResource` instance. The JAX-RS runtime then forwards the request into that instance for further dispatching.
+The Sub-Resource Locator design pattern encapsulates the delegation of a nested URL path's responsibility in its own class rather than inside the parent resource. For example, `SensorResource` has a method annotated with `@Path("/{sensorId}/readings")` that returns a `SensorReadingResource` instance (note that we do not use an HTTP method annotation to indicate how to invoke this method). The lifecycle of that instance will be managed independently by the JAX-RS runtime.
 
-**Architectural benefits:**
+**Benefits of this architectural approach:**
 
-1. **Single Responsibility Principle** — `SensorResource` manages sensor lifecycle; `SensorReadingResource` manages reading history. Each class has one clearly defined responsibility and can be understood, tested, and modified in isolation.
-2. **Reduced complexity** — A single large controller handling every nested path (`/sensors`, `/sensors/{id}`, `/sensors/{id}/readings`, `/sensors/{id}/readings/{rid}`) becomes unwieldy quickly. Delegation keeps each class focused and readable.
-3. **Independent testability** — `SensorReadingResource` can be instantiated directly in a unit test with a given `sensorId`, without needing to spin up the full JAX-RS container or route a request through `SensorResource`.
-4. **Maintainability and extensibility** — Adding new operations under `/readings` (e.g. aggregation endpoints) only requires changes to `SensorReadingResource`, with no risk of inadvertently affecting sensor management logic.
-
+1. **Single Responsibility Principle**: The `SensorResource` class is responsible for managing the lifecycle of a sensor, while the `SensorReadingResource` class is responsible for managing the history of all readings taken from that sensor. Each class has a clear responsibility, which means it is easier to understand, test, and modify independently of one another.
+2. **Reduced complexity**: Using one large controller to handle each nested path quickly makes that controller complex and difficult to read. This approach utilizes delegation to divide responsibilities amongst separate classes that all have a clearly defined focus.
+3. **Independent testability**: The `SensorReadingResource` class can be instantiated directly in a unit test with a sensorId specified as input, thereby eliminating the need to spin up the full JAX-RS container or route the request through the `SensorResource`.
+4. **Maintainability and extensibility**: The addition of a new operation (e.g. aggregation endpoints) under the base path of `/readings` can be done solely within the `SensorReadingResource` class, posing no risk of unwittingly impacting the operation of the logic contained in `SensorResource`.
 ---
 
 ### Part 5 – Q2: Why 422 vs 404 for a Missing Referenced Resource
+**Question: WhyisHTTP422oftenconsideredmoresemanticallyaccurate than a standard
+404 whenthe issue is a missing reference inside a valid JSON payload?**
 
 - **`404 Not Found`** means the **requested URI** does not exist — the URL path `/api/v1/sensors` was not found on the server. That is clearly wrong here: the endpoint exists and was reached successfully.
 - **`422 Unprocessable Entity`** means the request was **syntactically valid** (correct `Content-Type`, well-formed JSON) but **semantically invalid** — the server understood the request but cannot act on it because of a business rule violation. In this case, the `roomId` field inside the payload references an entity that does not exist.
@@ -557,22 +585,30 @@ Using `404` would be actively misleading: it would suggest the client used the w
 ---
 
 ### Part 5 – Q4: Cybersecurity Risks of Exposing Stack Traces
+**Question: From a cybersecurity standpoint, explain the risks associated with exposing
+internal Java stack traces to external API consumers. What specific information could an
+attacker gather from such a trace?**
 
-Exposing raw Java stack traces to external API consumers is a serious security vulnerability. A stack trace is a diagnostic artefact designed for developers — when visible to an attacker, it becomes an intelligence report on the system's internals.
+While raw Java stack traces are intended for debugging, exposing them directly to API clients creates a significant security risk. Stack traces contain many sensitive pieces of information about how your internal systems operate, which cybercriminals could use as a foothold in your systems.
 
-Specific information an attacker can extract:
+Cybercriminals could take advantage of raw stacks to extract information, such as:
 
-- **Internal package and class names** — e.g. `com.smartcampus.application.DataStore.getRoom(DataStore.java:42)` reveals the application's package structure and class hierarchy, enabling targeted code analysis.
-- **Third-party libraries and version numbers** — framework names and versions (e.g. Jersey, Jackson) visible in stack frames allow an attacker to search the CVE database for known vulnerabilities affecting those exact versions.
-- **Server-side file paths** — absolute paths such as `/home/deploy/app/...` expose the operating system, deployment directory structure, and potentially the username running the process.
-- **Business logic flow** — the sequence of method calls in a trace reveals how requests are processed, helping an attacker map execution paths, identify input validation gaps, and craft targeted exploits.
-- **Database and infrastructure details** — in deeper stack traces, connection pool class names, ORM internals, or SQL error messages may appear, providing a roadmap to the data layer.
+- **Class and package names**: which would indicate the structure and logic behind your systems, enabling targeed code analysis.
+- **Third-party libraries and version numbers**: which would allow a criminal to look up known vulnerabilities to inject attacks against your systems.
+- **Server-side file paths**: which would give the attacker information about your server environment as well as how you deploy your systems, and potentially the username running the process.
+- **Business logic flow**: Execution flow that would show an attacker how requests are processed through your system, helping them identify execution paths, input validation gaps and plan attacks.
+- **Database and infrastructure details**: in deeper stack traces, connection pool class names, ORM internals, or SQL error messages may appear, providing a roadmap to the data layer.
 
-The `GlobalExceptionMapper` in this project addresses this by logging the full stack trace server-side (where it belongs) while returning only a generic, opaque `500 Internal Server Error` JSON body to the client — containing no internal details whatsoever.
+With this information, cybercriminals can identify your system and create specific exploits against it.
+
+To mitigate this risk, the GlobalExceptionMapper logs the full stack trace of the error on the server, while only returning a generic 500 Internal Server Error response to the client making the API call. This allows for debugging purposes to be kept internally while protecting sensitive information externally.
 
 ---
 
 ### Part 5 – Q5: Why Filters for Cross-Cutting Concerns
+**Question: Why is it advantageous to use JAX-RS filters for cross-cutting concerns like
+logging, rather than manually inserting Logger.info() statements inside every single re
+source method**
 
 Cross-cutting concerns are behaviours that must apply to every endpoint uniformly — logging, authentication, CORS, rate-limiting. JAX-RS filters are the correct mechanism because:
 
