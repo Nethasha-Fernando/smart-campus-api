@@ -28,7 +28,7 @@ public class DiscoveryResource {
         discovery.put("status", "operational");
         discovery.put("description",
                 "A RESTful API for managing campus rooms and IoT sensors " +
-                        "built with JAX-RS (Jersey) on an embedded Grizzly server.");
+                        "built with JAX-RS (Jersey) deployed on Apache Tomcat.");
 
         // Administrative contact
         Map<String, String> contact = new LinkedHashMap<>();
