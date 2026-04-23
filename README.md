@@ -211,7 +211,9 @@ Expected response (`200 OK`):
   "api": "Smart Campus Sensor & Room Management API",
   "version": "1.0.0",
   "status": "operational",
-  "description": "A RESTful API for managing campus rooms and IoT sensors built with JAX-RS (Jersey) deployed on Apache Tomcat.",
+  "description",
+                "A RESTful API for managing campus rooms and IoT sensors " +
+                        "built with JAX-RS (Jersey) deployed on Apache Tomcat",
   "contact": {
     "Team": "University of Westminster - Smart Campus Initiative",
     "Module": "5COSC022W Client-Server Architectures",
