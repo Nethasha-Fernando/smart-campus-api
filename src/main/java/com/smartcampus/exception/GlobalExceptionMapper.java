@@ -16,8 +16,17 @@ public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
     public Response toResponse(Throwable ex) {
         // Let Jersey handle its own WebApplicationExceptions (404, 405, etc.)
         if (ex instanceof WebApplicationException) {
-            return ((WebApplicationException) ex).getResponse();
-        }
+        WebApplicationException webEx = (WebApplicationException) ex;
+        int status = webEx.getResponse().getStatus();
+        return Response.status(status)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of(
+                    "status", status,
+                    "error", Response.Status.fromStatusCode(status).getReasonPhrase(),
+                    "message", webEx.getMessage()
+                ))
+                .build();
+}
 
         LOGGER.severe("Unhandled exception: " + ex.getMessage());
         ex.printStackTrace();
